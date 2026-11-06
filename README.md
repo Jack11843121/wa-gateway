@@ -213,6 +213,21 @@ wa-gateway/
 - **改了 MQ 主题没生效？** 主题同时声明在代码注解与 `gateway.mq.*`，需一并修改并重启（见配置文档）。
 - **要不要 whitelist IP？** Meta 侧企业账号/风控可能要求固定出口 IP，方案见 [docs/NAT-EGRESS-IP-WHITELIST.md](docs/NAT-EGRESS-IP-WHITELIST.md)。
 
+---
+
+## 定制开发 / 联系
+
+本项目 Apache-2.0 开源、永久免费使用。
+
+如需**定制开发**（WhatsApp On-Premises/Business API 适配、私有化内网部署、多 WABA/多渠道统一调度、与 IM/客服/营销/私域系统集成、跨境电商与出海场景等），或需要**部署 + 联调 + 生产落地指导**，欢迎联系：
+
+📞 **电话：15919897624**
+📧 **邮箱：11843121@qq.com**
+
+> 可提供：开发、部署、联调、生产运维等定制业务，费用很低。
+
+---
+
 ## License
 
 [Apache License 2.0](LICENSE)

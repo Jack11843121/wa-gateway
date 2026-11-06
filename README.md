@@ -1,6 +1,10 @@
 # wa-gateway
 
+> An open-source, production-ready **WhatsApp Cloud API Gateway** (Meta Graph API) — RocketMQ async delivery · Nacos config center · multi-WABA routing · webhook signature & idempotency · Kubernetes. Built with Spring Boot 3 / Java 17.
+>
 > 一个开源、可自部署的 **WhatsApp Cloud API 网关**，对接 Meta 官方 Graph API，把你的系统与 WhatsApp 社媒消息能力接起来。
+
+> **Keywords / 关键词**：whatsapp · whatsapp-cloud-api · whatsapp-gateway · meta-graph-api · rocketmq · nacos · spring-boot · kubernetes · message-gateway · webhook · messaging
 
 **它是什么**：部署在你自己的服务器上，向上游业务方提供统一的 REST API（发消息、收回调、管账号/号码/模板/媒体），向下游对接 `graph.facebook.com`，中间负责**异步削峰、多账号路由、幂等、限流、签名校验、回调重投、可观测**等所有「脏活」。
 

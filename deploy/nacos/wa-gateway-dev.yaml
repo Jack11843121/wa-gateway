@@ -1,0 +1,32 @@
+# =============================================================================
+# wa-gateway-dev.yaml  （主配置 data-id: wa-gateway-dev.yaml）
+# 开发环境：MySQL / Redis / RocketMQ / 注册中心。生产用 wa-gateway-prod.yaml。
+# =============================================================================
+server:
+  port: 8080
+
+spring:
+  datasource:
+    url: jdbc:mysql://mysql:3306/wa_gateway?useUnicode=true&characterEncoding=utf8&useSSL=false&serverTimezone=UTC&rewriteBatchedStatements=true
+    username: root
+    password: root123
+    hikari:
+      maximum-pool-size: 20
+      minimum-idle: 5
+  data:
+    redis:
+      host: redis
+      port: 6379
+      password: ""
+      database: 0
+
+rocketmq:
+  name-server: rocketmq-namesrv:9876
+  producer:
+    group: WA_GATEWAY_PRODUCER
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus

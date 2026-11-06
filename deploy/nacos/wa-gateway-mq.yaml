@@ -1,0 +1,16 @@
+# =============================================================================
+# wa-gateway-mq.yaml  （extension-configs）
+# RocketMQ 主题/消费者组/标签。
+#
+# ⚠️ topic/group/tag 同时声明在消费者代码注解中
+#   (MessageSendConsumer / WebhookEventConsumer)。此处的值务必与之一致；
+#   改名属于「拓扑变更」，请同步改代码 + 本配置并重启。
+# =============================================================================
+gateway:
+  mq:
+    message-topic: WA_MESSAGE_SEND
+    message-group: CG_WA_MESSAGE_SEND
+    message-tag: SEND_TAG
+    webhook-topic: WA_WEBHOOK_EVENT
+    webhook-group: CG_WA_WEBHOOK_EVENT
+    webhook-tag: EVENT_TAG

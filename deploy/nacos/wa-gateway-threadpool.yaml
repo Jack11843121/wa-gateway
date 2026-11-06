@@ -1,0 +1,11 @@
+# =============================================================================
+# wa-gateway-threadpool.yaml  （extension-configs，热更新）
+# 回调 HTTP 阻塞 IO 线程池，收到刷新事件后实时调整（无需重启）。
+# =============================================================================
+gateway:
+  thread-pool:
+    callback:
+      core-pool-size: 16
+      max-pool-size: 64
+      queue-capacity: 2000
+      keep-alive-seconds: 60

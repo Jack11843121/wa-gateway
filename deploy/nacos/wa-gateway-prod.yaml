@@ -1,0 +1,37 @@
+# =============================================================================
+# wa-gateway-prod.yaml  （生产环境示例，敏感值用环境变量/K8s Secret 注入更佳）
+# =============================================================================
+server:
+  port: 8080
+
+spring:
+  datasource:
+    url: jdbc:mysql://${MYSQL_HOST}:${MYSQL_PORT}/wa_gateway?useUnicode=true&characterEncoding=utf8&useSSL=false&serverTimezone=UTC&rewriteBatchedStatements=true
+    username: ${MYSQL_USER}
+    password: ${MYSQL_PASSWORD}
+    hikari:
+      maximum-pool-size: 50
+      minimum-idle: 10
+  data:
+    redis:
+      host: ${REDIS_HOST}
+      port: 6379
+      password: ${REDIS_PASSWORD}
+      database: 0
+
+rocketmq:
+  name-server: ${ROCKETMQ_NAME_SERVER}
+  producer:
+    group: ${ROCKETMQ_PRODUCER_GROUP}
+    access-key: ${ROCKETMQ_ACCESS_KEY}
+    secret-key: ${ROCKETMQ_SECRET_KEY}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+  endpoint:
+    health:
+      probes:
+        enabled: true

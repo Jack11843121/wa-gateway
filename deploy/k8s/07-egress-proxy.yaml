@@ -1,0 +1,73 @@
+# =============================================================================
+# 可选：固定 NAT 出口代理（Squid），用于「出口 IP 白名单」场景。
+# 原理：WA 网关的所有 Graph API 出站请求走 squid，squid 通过 LoadBalancer
+# 固定 EIP/LB 出口，将该 IP 加入 Meta/企业防火墙白名单即可。
+# 配好后在 Nacos/IP 环境变量中设置：
+#   gateway.outbound.proxy-host=<squid 服务名>/IP, gateway.outbound.proxy-port=3128
+# =============================================================================
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: wa-gateway-egress-proxy
+  namespace: wa-gateway
+data:
+  squid.conf: |
+    http_port 3128
+    acl all src 0.0.0.0/0
+    http_access allow all
+    # 建议改为只允许本网关所在网段，避免被滥用：
+    # acl gateways src 10.0.0.0/8
+    # http_access allow gateways
+    # http_access deny all
+    dns_v4_first on
+    shutdown_lifetime 3 seconds
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: wa-gateway-egress-proxy
+  namespace: wa-gateway
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: wa-gateway-egress-proxy
+  template:
+    metadata:
+      labels:
+        app: wa-gateway-egress-proxy
+    spec:
+      containers:
+        - name: squid
+          image: ubuntu/squid:latest
+          ports:
+            - containerPort: 3128
+          volumeMounts:
+            - name: squid-conf
+              mountPath: /etc/squid/squid.conf
+              subPath: squid.conf
+      volumes:
+        - name: squid-conf
+          configMap:
+            name: wa-gateway-egress-proxy
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: wa-gateway-egress-proxy
+  namespace: wa-gateway
+  annotations:
+    # 云厂商静态 IP 示例（二选一，按厂商调整）：
+    # service.beta.kubernetes.io/aws-load-balancer-type: "nlb"
+    # service.beta.kubernetes.io/alibaba-cloud-loadbalancer-address-type: "internet"
+    # service.beta.kubernetes.io/alibaba-cloud-loadbalancer-eip-bandwidth: "100"
+    # 阿里云按量 EIP：service.beta.kubernetes.io/alibaba-cloud-loadbalancer-charge-type: "paybytraffic"
+    metagate: "annotate-your-provider-for-a-fixed-eip-here"
+spec:
+  type: LoadBalancer
+  selector:
+    app: wa-gateway-egress-proxy
+  ports:
+    - name: proxy
+      port: 3128
+      targetPort: 3128

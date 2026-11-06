@@ -1,0 +1,51 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: wa-gateway
+  namespace: wa-gateway
+  annotations:
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "120"
+    nginx.ingress.kubernetes.io/proxy-body-size: "100m"
+spec:
+  ingressClassName: nginx
+  rules:
+    - host: wa-gateway.example.com       # 替换为你的域名
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: wa-gateway
+                port:
+                  number: 8080
+  tls:
+    - hosts:
+        - wa-gateway.example.com
+      secretName: wa-gateway-tls
+---
+# 单独暴露 webhook 路径（Meta 回调入口），可独立限速/限源
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: wa-gateway-webhook
+  namespace: wa-gateway
+  annotations:
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "20"
+spec:
+  ingressClassName: nginx
+  rules:
+    - host: webhook.example.com
+      http:
+        paths:
+          - path: /v1/webhooks
+            pathType: Prefix
+            backend:
+              service:
+                name: wa-gateway
+                port:
+                  number: 8080
+  tls:
+    - hosts:
+        - webhook.example.com
+      secretName: wa-gateway-tls-webhook

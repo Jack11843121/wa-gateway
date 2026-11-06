@@ -1,0 +1,145 @@
+# =============================================================================
+# wa-gateway 应用配置（本地/容器默认值）
+# 所有敏感值均可用环境变量覆盖；可调参数建议下沉到 Nacos，实现热更新。
+# 说明：本文件保证「无 Nacos 也能跑起来」，接入 Nacos 后同名配置以 Nacos 为准。
+# =============================================================================
+server:
+  port: ${SERVER_PORT:8080}
+  shutdown: graceful
+
+spring:
+  application:
+    name: wa-gateway
+  lifecycle:
+    timeout-per-shutdown-phase: 30s
+  datasource:
+    url: ${MYSQL_URL:jdbc:mysql://127.0.0.1:3306/wa_gateway?useUnicode=true&characterEncoding=utf8&useSSL=false&serverTimezone=UTC&rewriteBatchedStatements=true}
+    username: ${MYSQL_USER:root}
+    password: ${MYSQL_PASSWORD:root}
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    hikari:
+      maximum-pool-size: ${DB_POOL_MAX:20}
+      minimum-idle: ${DB_POOL_MIN:5}
+      connection-timeout: 30000
+  jpa:
+    hibernate:
+      ddl-auto: none                     # 表结构完全由 Flyway 管理
+    open-in-view: false
+    properties:
+      hibernate:
+        jdbc.batch_size: 100
+        order_inserts: true
+        order_updates: true
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+    baseline-on-migrate: true
+  data:
+    redis:
+      host: ${REDIS_HOST:127.0.0.1}
+      port: ${REDIS_PORT:6379}
+      password: ${REDIS_PASSWORD:}
+      database: ${REDIS_DB:0}
+      timeout: 3000ms
+      lettuce:
+        pool:
+          max-active: 16
+          max-idle: 8
+          min-idle: 2
+          max-wait: 3000ms
+  servlet:
+    multipart:
+      max-file-size: ${MAX_FILE_SIZE:100MB}
+      max-request-size: ${MAX_REQUEST_SIZE:100MB}
+
+rocketmq:
+  # NameServer 地址（集群逗号分隔）
+  name-server: ${ROCKETMQ_NAME_SERVER:127.0.0.1:9876}
+  producer:
+    group: ${ROCKETMQ_PRODUCER_GROUP:WA_GATEWAY_PRODUCER}
+    # 若 MQ 集群开启了 ACL / 使用云厂商 RocketMQ（如腾讯云 TDMQ-RocketMQ），配置以下两项
+    access-key: ${ROCKETMQ_ACCESS_KEY:}
+    secret-key: ${ROCKETMQ_SECRET_KEY:}
+    send-message-timeout: 5000
+    retry-times-when-send-failed: 2
+  consumer:
+    access-key: ${ROCKETMQ_ACCESS_KEY:}
+    secret-key: ${ROCKETMQ_SECRET_KEY:}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+  endpoint:
+    health:
+      probes:
+        enabled: true
+      show-details: when_authorized
+  metrics:
+    tags:
+      application: ${spring.application.name}
+
+springdoc:
+  swagger-ui:
+    path: /swagger-ui.html
+    tags-sorter: alpha
+    operations-sorter: alpha
+  api-docs:
+    path: /v3/api-docs
+
+logging:
+  config: classpath:logback-spring.xml
+
+# -----------------------------------------------------------------------------
+# 网关业务配置（prefix: gateway）
+# -----------------------------------------------------------------------------
+gateway:
+  graph:
+    # Meta Graph API 根地址与版本
+    base-url: ${GRAPH_BASE_URL:https://graph.facebook.com}
+    version: ${GRAPH_VERSION:v20.0}
+    connect-timeout-ms: 5000
+    read-timeout-ms: 20000
+    # 出站连接池
+    max-total: 200
+    max-per-route: 100
+  # REST API 访问鉴权：静态 API Key（生产建议通过 Nacos/K8s Secret 注入）
+  auth:
+    api-keys:
+      - ${GATEWAY_API_KEY:change-me-admin-key}
+  # webhook 验证与签名
+  webhook:
+    # 是否强制校验 Meta 的 X-Hub-Signature-256 签名（强烈建议开启）
+    signature-required: ${WEBHOOK_SIGNATURE_REQUIRED:true}
+    # 应用级 webhook 验证令牌（与 Meta 应用 > WhatsApp > 配置 一致），可为空则匹配账号级 verify_token
+    verify-token: ${WEBHOOK_VERIFY_TOKEN:}
+  # 出站代理解析：将 Graph API 出站流量收敛到固定 NAT 出口 IP（可选）
+  outbound:
+    proxy-host: ${OUTBOUND_PROXY_HOST:}
+    proxy-port: ${OUTBOUND_PROXY_PORT:0}
+  # 下游回调（webhook 事件推送给业务方）重试策略
+  callback:
+    max-retry: 5
+    initial-backoff-ms: 1000
+    backoff-multiplier: 2.0
+    timeout-ms: 4000
+  # 幂等键在 Redis 中的存活时间
+  idempotent:
+    ttl-seconds: 86400
+  # 账号 access-token 落库加密用的 AES 密钥（32 字节 base64 或明文）
+  token:
+    secret: ${TOKEN_ENCRYPT_SECRET:change-me-32-char-encrypt-secret}
+  # RocketMQ 主题 / 消费者组 / 标签
+  mq:
+    message-topic: ${MQ_MESSAGE_TOPIC:WA_MESSAGE_SEND}
+    message-group: ${MQ_MESSAGE_GROUP:CG_WA_MESSAGE_SEND}
+    message-tag: ${MQ_MESSAGE_TAG:SEND_TAG}
+    webhook-topic: ${MQ_WEBHOOK_TOPIC:WA_WEBHOOK_EVENT}
+    webhook-group: ${MQ_WEBHOOK_GROUP:CG_WA_WEBHOOK_EVENT}
+    webhook-tag: ${MQ_WEBHOOK_TAG:EVENT_TAG}
+  # 限流（固定窗口，基于 Redis）
+  rate-limit:
+    enabled: ${RATE_LIMIT_ENABLED:true}
+    send-per-second: ${RATE_LIMIT_SEND_PER_SECOND:50}
+    webhook-per-second: ${RATE_LIMIT_WEBHOOK_PER_SECOND:200}

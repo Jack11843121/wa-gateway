@@ -1,0 +1,45 @@
+# =============================================================================
+# wa-gateway - 启动引导配置（Nacos 配置中心）
+# 通过环境变量注入敏感信息，例如：
+#   NACOS_SERVER_ADDR / NACOS_USERNAME / NACOS_PASSWORD / NACOS_NAMESPACE
+# =============================================================================
+spring:
+  application:
+    name: wa-gateway
+  profiles:
+    active: ${SPRING_PROFILES_ACTIVE:dev}
+  cloud:
+    nacos:
+      config:
+        # 配置中心地址（集群用逗号分隔）
+        server-addr: ${NACOS_SERVER_ADDR:127.0.0.1:8848}
+        username: ${NACOS_USERNAME:nacos}
+        password: ${NACOS_PASSWORD:nacos}
+        # 命名空间：不同环境隔离配置（如 dev/prod 独立 namespace id）
+        namespace: ${NACOS_NAMESPACE:}
+        group: ${NACOS_GROUP:wa-gateway}
+        file-extension: yaml
+        refresh-enabled: true
+        # 主数据源：{application}-{profile}.yaml  （wa-gateway-dev.yaml）
+        # 额外拆分的配置，按关注点拆分，方便独立热更新
+        extension-configs:
+          - data-id: wa-gateway-mq.yaml           # MQ 主题 / 消费者组
+            group: ${NACOS_GROUP:wa-gateway}
+            refresh: true
+          - data-id: wa-gateway-threadpool.yaml   # 动态线程池 / 异步执行器
+            group: ${NACOS_GROUP:wa-gateway}
+            refresh: true
+          - data-id: wa-gateway-ratelimit.yaml    # 限流 / 熔断 / 重试
+            group: ${NACOS_GROUP:wa-gateway}
+            refresh: true
+        # 多环境共享配置
+        shared-configs:
+          - data-id: wa-gateway-common.yaml       # 通用配置（Graph API 版本、超时、开关）
+            group: ${NACOS_GROUP:wa-gateway}
+            refresh: true
+      discovery:
+        server-addr: ${NACOS_SERVER_ADDR:127.0.0.1:8848}
+        username: ${NACOS_USERNAME:nacos}
+        password: ${NACOS_PASSWORD:nacos}
+        namespace: ${NACOS_NAMESPACE:}
+        group: ${NACOS_GROUP:wa-gateway}

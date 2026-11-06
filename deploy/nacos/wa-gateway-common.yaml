@@ -1,0 +1,32 @@
+# =============================================================================
+# wa-gateway-common.yaml  （shared-configs，多环境共享）
+# 在 Nacos 中按 data-id 导入，group 默认 wa-gateway
+# 关注点：Graph API、Webhook、回调重试、出站代理、token 加密
+# =============================================================================
+gateway:
+  graph:
+    base-url: https://graph.facebook.com
+    version: v20.0            # 按 Meta 最新版本调整
+    connect-timeout-ms: 5000
+    read-timeout-ms: 20000
+    max-total: 200
+    max-per-route: 100
+  webhook:
+    signature-required: true   # 强烈建议开启
+    verify-token: "replace-with-app-webhook-verify-token"
+  # 下游回调（webhook 事件转发）策略
+  callback:
+    max-retry: 5
+    initial-backoff-ms: 1000
+    backoff-multiplier: 2.0
+    timeout-ms: 4000
+  # 幂等键 TTL
+  idempotent:
+    ttl-seconds: 86400
+  # 账号 access-token 落库加密密钥（请替换，至少 32 字节随机）
+  token:
+    secret: "replace-with-a-32-byte-random-secret"
+  # 出站固定代理（可选，见 docs/NAT-EGRESS-IP-WHITELIST.md）
+  outbound:
+    proxy-host: ""
+    proxy-port: 0

@@ -1,0 +1,9 @@
+# =============================================================================
+# wa-gateway-ratelimit.yaml  （extension-configs，热更新）
+# Redis 固定窗口限流。
+# =============================================================================
+gateway:
+  rate-limit:
+    enabled: true
+    send-per-second: 50        # 每账号每秒发送请求上限（对齐 Meta 吞吐等级）
+    webhook-per-second: 500    # 每账号每秒接收 webhook 事件上限

@@ -1,0 +1,43 @@
+name: build-image
+
+# 打 tag（v1.0.0 等）触发：构建 fat jar → 构建 Docker 镜像 → docker save 镜像包 → 上传到 GitHub Release
+# 目的：在 GitHub 托管环境（可访问 Docker Hub）构建出「预构建镜像包」，
+#       再由运维把 wa-gateway-1.0.0.tar.gz 托管到腾讯云 /releases/，客户 install.sh 下载后 docker load 启动。
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Build fat jar
+        run: mvn -B -ntp clean package -DskipTests
+
+      - name: Build Docker image
+        run: docker build -t wa-gateway:1.0.0 .
+
+      - name: Save image as tarball
+        run: |
+          docker save wa-gateway:1.0.0 -o wa-gateway-1.0.0.tar
+          gzip -9 wa-gateway-1.0.0.tar
+          ls -lh wa-gateway-1.0.0.tar.gz
+
+      - name: Upload to GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: wa-gateway-1.0.0.tar.gz
+          generate_release_notes: true

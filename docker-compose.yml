@@ -1,10 +1,7 @@
 # =============================================================================
-# wa-gateway 一键安装（Docker Compose，all-in-one）
-# 用法：在 wa-gateway 目录下执行  docker compose up -d --build
-# 或直接  sudo bash install.sh  （脚本会自动装 Docker 并执行下面这套栈）
-#
-# 包含：MySQL + Redis + RocketMQ(namesrv+broker) + wa-gateway
-# Nacos 为可选（应用无 Nacos 也能用 env 配置运行），需要时再另起。
+# wa-gateway 生产编排（客户主机使用；由 install.sh 从腾讯云下载）
+# wa-gateway 用「预构建镜像 wa-gateway:1.0.0」，其余为官方依赖镜像。
+# 先 docker load 加载 wa-gateway 镜像，再 docker compose up -d。
 # =============================================================================
 services:
   mysql:
@@ -56,8 +53,7 @@ services:
       - "10911:10911"
 
   wa-gateway:
-    build: .
-    image: wa-gateway:latest
+    image: wa-gateway:1.0.0
     container_name: wa-gateway
     restart: unless-stopped
     depends_on:

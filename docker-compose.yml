@@ -1,0 +1,94 @@
+# =============================================================================
+# wa-gateway 一键安装（Docker Compose，all-in-one）
+# 用法：在 wa-gateway 目录下执行  docker compose up -d --build
+# 或直接  sudo bash install.sh  （脚本会自动装 Docker 并执行下面这套栈）
+#
+# 包含：MySQL + Redis + RocketMQ(namesrv+broker) + wa-gateway
+# Nacos 为可选（应用无 Nacos 也能用 env 配置运行），需要时再另起。
+# =============================================================================
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: wa-gateway-mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-root123}
+      MYSQL_DATABASE: wa_gateway
+    command: --default-authentication-plugin=mysql_native_password --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql-data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-p${MYSQL_ROOT_PASSWORD:-root123}"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+
+  redis:
+    image: redis:7-alpine
+    container_name: wa-gateway-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+
+  rocketmq-namesrv:
+    image: apache/rocketmq:5.3.0
+    container_name: wa-gateway-rmq-namesrv
+    restart: unless-stopped
+    command: sh mqnamesrv
+    ports:
+      - "9876:9876"
+
+  rocketmq-broker:
+    image: apache/rocketmq:5.3.0
+    container_name: wa-gateway-rmq-broker
+    restart: unless-stopped
+    depends_on:
+      - rocketmq-namesrv
+    environment:
+      NAMESRV_ADDR: "rocketmq-namesrv:9876"
+    command: sh mqbroker -n rocketmq-namesrv:9876
+    ports:
+      - "10909:10909"
+      - "10911:10911"
+
+  wa-gateway:
+    build: .
+    image: wa-gateway:latest
+    container_name: wa-gateway
+    restart: unless-stopped
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_started
+      rocketmq-namesrv:
+        condition: service_started
+      rocketmq-broker:
+        condition: service_started
+    environment:
+      SERVER_PORT: "8080"
+      MYSQL_URL: "jdbc:mysql://mysql:3306/wa_gateway?useUnicode=true&characterEncoding=utf8&useSSL=false&serverTimezone=UTC&rewriteBatchedStatements=true"
+      MYSQL_USER: "root"
+      MYSQL_PASSWORD: "${MYSQL_ROOT_PASSWORD:-root123}"
+      REDIS_HOST: "redis"
+      REDIS_PORT: "6379"
+      ROCKETMQ_NAME_SERVER: "rocketmq-namesrv:9876"
+      ROCKETMQ_PRODUCER_GROUP: "WA_GATEWAY_PRODUCER"
+      GATEWAY_API_KEY: "${GATEWAY_API_KEY:-change-me-admin-key}"
+      TOKEN_ENCRYPT_SECRET: "${TOKEN_ENCRYPT_SECRET:-change-me-32-char-encrypt-secret}"
+      GRAPH_VERSION: "${GRAPH_VERSION:-v20.0}"
+    ports:
+      - "8080:8080"
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:8080/v1/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 20
+
+volumes:
+  mysql-data:
+  redis-data:
